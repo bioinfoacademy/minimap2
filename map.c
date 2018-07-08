@@ -495,7 +495,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
 				}
 				for (j = 0; j < s->n_reg[i]; ++j) {
 					mm_reg1_t *r = &s->reg[i][j];
-					if(p->opt->multi_prefix!=NULL) {
+					if (p->opt->multi_prefix != NULL) {
 						mm_multi_write(p->multipart_fd, r, sizeof(mm_reg1_t), 1);
 						if(p->opt->flag & MM_F_CIGAR){
 							mm_multi_write(p->multipart_fd, &(r->p->capacity), sizeof(uint32_t), 1);
@@ -505,7 +505,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
 					assert(!r->sam_pri || r->id == r->parent);
 					if ((p->opt->flag & MM_F_NO_PRINT_2ND) && r->id != r->parent)
 						continue;
-					if (p->opt->multi_prefix==NULL){
+					if (p->opt->multi_prefix == NULL) {
 						if (p->opt->flag & MM_F_OUT_SAM)
 							mm_write_sam2(&p->str, mi, t, i - seg_st, j, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag);
 						else

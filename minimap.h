@@ -138,8 +138,7 @@ typedef struct {
 	int32_t max_occ;
 	int mini_batch_size; // size of a batch of query bases to process in parallel
 
-	char *multi_prefix;
-
+	const char *multi_prefix;
 } mm_mapopt_t;
 
 // index reader

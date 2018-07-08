@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 			if (*s == ',') opt.e2 = strtol(s + 1, &s, 10);
 		} else if (c == 0 && long_idx == 34) { //multi-part
 			fprintf(stderr, "[WARNING]\033[1;31m option --multi-prefix is experimental. Currently works only with uni-segment reads.\033[0m\n");
-			opt.multi_prefix=optarg;
+			opt.multi_prefix = optarg;
 		}
 
 	}
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
 	}
 	if (opt.best_n == 0 && (opt.flag&MM_F_CIGAR) && mm_verbose >= 2)
 		fprintf(stderr, "[WARNING]\033[1;31m `-N 0' reduces alignment accuracy. Please use --secondary=no to suppress secondary alignments.\033[0m\n");
-	if ((opt.multi_prefix!=NULL) && (argc - (optind + 1) > 1)) {
+	if (opt.multi_prefix != NULL && argc - (optind + 1) > 1) {
 		fprintf(stderr,"[ERROR]\033[1;31m --multi-prefix is not yet implemented for multi-segment reads\033[0m\n");
 		return 1;
     }
@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
 			mm_idx_reader_close(idx_rdr);
 			return 1;
 		}
-		if ((opt.flag & MM_F_OUT_SAM) && (idx_rdr->n_parts == 1) && (opt.multi_prefix==NULL)) {
+		if ((opt.flag & MM_F_OUT_SAM) && idx_rdr->n_parts == 1 && opt.multi_prefix == NULL) {
 			if (mm_idx_reader_eof(idx_rdr)) {
 				mm_write_sam_hdr(mi, rg, MM_VERSION, argc, argv);
 			} else {
