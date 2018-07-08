@@ -88,9 +88,9 @@ void mm_pair(void *km, int max_gap_ref, int dp_bonus, int sub_diff, int match_sc
 
 void mm_err_puts(const char *str);
 
-FILE *mm_multi_init(const mm_mapopt_t *opt, mm_idx_t *idx);
+FILE *mm_multi_init(const mm_mapopt_t *opt, const mm_idx_t *idx);
 void mm_multi_close(FILE* fd);
-void mm_multi_write(FILE* fd, void *buf, size_t element_size, size_t num_elements);
+void mm_multi_write(FILE* fd, const void *buf, size_t element_size, size_t num_elements);
 
 #ifdef __cplusplus
 }

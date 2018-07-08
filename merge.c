@@ -13,7 +13,7 @@
 // See : https://github.com/lh3/minimap2/issues/141
 
 // make this inline for performance reasons
-void mm_multi_write(FILE *fp, void *buf, size_t element_size, size_t num_elements)
+void mm_multi_write(FILE *fp, const void *buf, size_t element_size, size_t num_elements)
 {
 	size_t ret = fwrite(buf, element_size, num_elements, fp);
 	if (ret != num_elements) {
@@ -31,7 +31,7 @@ static inline void multipart_read(FILE *fp, void *buf, size_t element_size, size
 	}
 }
 
-FILE *mm_multi_init(const mm_mapopt_t *opt, mm_idx_t *mi)
+FILE *mm_multi_init(const mm_mapopt_t *opt, const mm_idx_t *mi)
 {
 	int i = 0;
 	char filename[1024];

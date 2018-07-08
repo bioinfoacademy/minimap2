@@ -555,7 +555,7 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 		}
 	}
 	if (opt->multi_prefix != NULL)
-		pl.multipart_fd = mm_multi_init(opt, (mm_idx_t*)idx);
+		pl.multipart_fd = mm_multi_init(opt, idx);
 	pl.opt = opt, pl.mi = idx;
 	pl.n_threads = n_threads > 1? n_threads : 1;
 	pl.mini_batch_size = opt->mini_batch_size;
