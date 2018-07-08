@@ -34,20 +34,20 @@ static inline void multipart_read(FILE *fp, void *buf, size_t element_size, size
 FILE *mm_multi_init(const mm_mapopt_t *opt, mm_idx_t *mi)
 {
 	int i = 0;
-	char filename[256];
-	sprintf(filename, "%s%d.tmp", opt->multi_prefix, mi->idx_id);
-	// fprintf(stderr,"filename %s\n",filename);
-	FILE *fp = fopen(filename, "wb");
+	char filename[1024];
+	FILE *fp;
+	sprintf(filename, "%s%.4d.tmp", opt->multi_prefix, mi->idx_id);
+	fp = fopen(filename, "wb");
 	if (fp == NULL) {
 		if (mm_verbose >= 1)
-			fprintf(stderr, "ERROR: failed to open file '%s'\n for writing", opt->multi_prefix);
+			fprintf(stderr, "ERROR: failed to open file '%s' for writing\n", opt->multi_prefix);
 		exit(EXIT_FAILURE);
 	}
 
 	// write sequence names
 	mm_multi_write(fp, &(mi->n_seq), sizeof(mi->n_seq), 1);
 	for (i = 0; i < mi->n_seq; ++i) {
-		uint8_t l;
+		int l;
 		l = strlen(mi->seq[i].name);
 		mm_multi_write(fp, &l, 1, 1);
 		mm_multi_write(fp, mi->seq[i].name, 1, l);
@@ -60,9 +60,8 @@ FILE *mm_multi_init(const mm_mapopt_t *opt, mm_idx_t *mi)
 void mm_multi_close(FILE *fp)
 {
 	int ret = fclose(fp);
-	if (ret == -1) {
+	if (ret == -1)
 		fprintf(stderr, "Cannot close file");
-	}
 }
 
 static inline void mm_hit_sort_by_score(void *km, int *n_regs, mm_reg1_t *r)
@@ -71,8 +70,7 @@ static inline void mm_hit_sort_by_score(void *km, int *n_regs, mm_reg1_t *r)
 	mm128_t *aux;
 	mm_reg1_t *t;
 
-	if (n <= 1)
-		return;
+	if (n <= 1) return;
 	aux = (mm128_t *)kmalloc(km, n * 16);
 	t = (mm_reg1_t *)kmalloc(km, n * sizeof(mm_reg1_t));
 
@@ -97,21 +95,18 @@ static inline mm_reg1_t *merge_regs(const mm_mapopt_t *opt, const mm_idx_t *mi, 
 	} else {
 		mm_hit_sort_by_score(km, n_regs, regs);
 	}
-
 	if (!(opt->flag & MM_F_ALL_CHAINS)) { // don't choose primary mapping(s)
 		mm_set_parent(km, opt->mask_level, *n_regs, regs, opt->a * 2 + opt->b);
 		mm_select_sub(km, opt->pri_ratio, mi->k * 2, opt->best_n, n_regs, regs);
 		mm_set_sam_pri(*n_regs, regs);
 	}
-
 	return regs;
 }
 
 static inline int maximum(int *replens, int num_idx_parts)
 {
+	int i, max_rep = replens[0];
 	assert(num_idx_parts > 0);
-	int max_rep = replens[0];
-	int i;
 	for (i = 1; i < num_idx_parts; i++) {
 		assert(replens[i] >= 0);
 		if (replens[i] > max_rep)
@@ -142,7 +137,7 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 		cum_n_seq[i] = mi->n_seq;
 
 		// generate file name for the multi-part dump and open it
-		sprintf(filename, "%s%d.tmp", opt->multi_prefix, i);
+		sprintf(filename, "%s%.4d.tmp", opt->multi_prefix, i);
 		file[i] = fopen(filename, "rb");
 		if (file[i] == NULL) {
 			fprintf(stderr, "ERROR: Cannot open file %s\n", filename);
@@ -151,7 +146,6 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 
 		// read the number of reference sequences in the multi-part index
 		multipart_read(file[i], &n_seq, sizeof(uint32_t), 1);
-		// fprintf(stderr,"We have %d sequences\n",n_seq);
 
 		// update the total number of reference sequences read so far
 		mi->n_seq += n_seq;
@@ -169,7 +163,6 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 			multipart_read(file[i], s->name, 1, l); // get the read name
 			s->name[l] = 0;
 			multipart_read(file[i], &(s->len), 4, 1); // reference sequence length
-			// fprintf(stderr,"sequence name : %s\n",s->name);
 		}
 	}
 
@@ -179,14 +172,7 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 	if (opt->flag & MM_F_OUT_SAM)
 		mm_write_sam_hdr(mi, rg, MM_VERSION, argc, argv);
 
-	// fprintf(stderr,"We have %d sequences\n",mi->n_seq);
-	// for (j = 0; j < mi->n_seq; ++j) {
-	// 	mm_idx_seq_t *s = &mi->seq[j];
-	// 	fprintf(stderr,"sequence name : %s\n",s->name);
-	// }
-
 	// open the query sequence/fastq file
-	// fprintf(stderr,"opening : %s\n",fn[0]);
 	mm_bseq_file_t *fastq = mm_bseq_open(fn[0]);
 	if (fastq == 0) {
 		if (mm_verbose >= 1)
@@ -196,18 +182,13 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 
 	int nseq = 1;         // number of sequences read
 	void *km = km_init(); // kmemory
-	kstring_t *st;        // kstring
-	st = (kstring_t *)calloc(1, sizeof(kstring_t));
-	st->s = NULL;
-	st->l = 0;
-	st->m = 0;
+	kstring_t str = {0,0,0};
 
 	// read until all the query sequences are read
 	while (nseq > 0) {
 		mm_bseq1_t *seq = mm_bseq_read3(fastq, 1, 1, 0, 0, &nseq); // read a query sequence
 		if (nseq != 1 || seq == NULL)
 			break; // if no query sequences were read thats the end of the file.
-		// fprintf(stderr,"Name %s\n",seq->name);
 		int qlen = seq->l_seq; // length of a query sequence
 
 		n_regs_sum = 0; // total number of regs for the current query
@@ -217,7 +198,6 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 		for (i = 0; i < num_idx_parts; i++) {
 			// number of reg (mm_reg1_t)
 			multipart_read(file[i], &n_reg, sizeof(int), 1);
-			// fprintf(stderr,"n regs %d\n",n_reg);
 
 			// the replen : replen is calculated by collect_matches() in map.c. It is the sum of length of regions covered by highly repetitive k-mers.
 			multipart_read(file[i], &(replens[i]), sizeof(int), 1);
@@ -255,16 +235,11 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 			n_regs_sum += n_reg;
 		}
 
-		// fprintf(stderr,"Replens : ");
-		// for(i=0;i<num_idx_parts;i++)	fprintf(stderr,"%d\t",replens[i]);
-
 		// perform the merging of regs
 		reg = merge_regs(opt, mi, km, qlen, &n_regs_sum, reg);
 
 		int is_sr = !!(opt->flag & MM_F_SR);
-		// int rep_len=(int)(maximum(replens,num_idx_parts)*1.1);
 		int rep_len = maximum(replens, num_idx_parts);
-		// fprintf(stderr,"\nMax replen %d\n",rep_len);
 		mm_set_mapq(km, n_regs_sum, reg, opt->min_chain_score, opt->a, rep_len,
 				is_sr); // set the mapq
 
@@ -276,16 +251,16 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 			if ((opt->flag & MM_F_NO_PRINT_2ND) && r->id != r->parent)
 				continue;
 			if (opt->flag & MM_F_OUT_SAM) { // sam output
-				mm_write_sam2(st, mi, seq, 0, j, 1, &n_regs_sum, (const mm_reg1_t *const *)&reg, km, opt->flag);
+				mm_write_sam2(&str, mi, seq, 0, j, 1, &n_regs_sum, (const mm_reg1_t *const *)&reg, km, opt->flag);
 			} else { // paf output
-				mm_write_paf(st, mi, seq, r, km, opt->flag);
+				mm_write_paf(&str, mi, seq, r, km, opt->flag);
 			}
-			mm_err_puts(st->s);
+			mm_err_puts(str.s);
 		}
 
 		if (n_regs_sum == 0 && (opt->flag & MM_F_OUT_SAM)) { // write an unmapped record
-			mm_write_sam2(st, mi, seq, 0, -1, 1, &n_regs_sum, (const mm_reg1_t *const *)&reg, km, opt->flag);
-			mm_err_puts(st->s);
+			mm_write_sam2(&str, mi, seq, 0, -1, 1, &n_regs_sum, (const mm_reg1_t *const *)&reg, km, opt->flag);
+			mm_err_puts(str.s);
 		}
 
 		for (j = 0; j < n_regs_sum; ++j) {
@@ -298,8 +273,7 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 		// free the sequence
 		free(seq->seq);
 		free(seq->name);
-		if (seq->qual)
-			free(seq->qual);
+		free(seq->qual);
 		free(seq);
 	}
 
@@ -320,16 +294,14 @@ void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const
 	// delete the temporary files
 	char tmpfile[256];
 	for (i = 0; i < num_idx_parts; i++) {
-		sprintf(tmpfile, "%s%d.tmp", opt->multi_prefix, i);
+		sprintf(tmpfile, "%s%.4d.tmp", opt->multi_prefix, i);
 		int ret = remove(tmpfile);
 		if (ret < 0)
 			fprintf(stderr, "WARNING: Cannot delete the temporary file %s\n", tmpfile);
 	}
 
 	// free
-	free(st->s);
-	free(st);
-
+	free(str.s);
 	free(file);
 	free(filename);
 	free(cum_n_seq);
