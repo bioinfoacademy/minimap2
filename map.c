@@ -513,9 +513,14 @@ static void *worker_pipeline(void *shared, int step, void *in)
 						mm_err_puts(p->str.s);
 					}
 				}
-				if (s->n_reg[i] == 0 && (p->opt->flag & MM_F_OUT_SAM) && (p->opt->multi_prefix==NULL)) { // write an unmapped record
-					mm_write_sam2(&p->str, mi, t, i - seg_st, -1, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag);
-					mm_err_puts(p->str.s);
+				if (s->n_reg[i] == 0 && p->opt->multi_prefix == NULL) { // TODO: in the multi mode, unmapped reads are not written to SAM
+					if (p->opt->flag & MM_F_OUT_SAM) {
+						mm_write_sam2(&p->str, mi, t, i - seg_st, -1, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag);
+						mm_err_puts(p->str.s);
+					} else if (p->opt->flag & MM_F_PAF_NO_HIT) {
+						mm_write_paf(&p->str, mi, t, 0, 0, p->opt->flag);
+						mm_err_puts(p->str.s);
+					}
 				}
 			}
 			for (i = seg_st; i < seg_en; ++i) {
