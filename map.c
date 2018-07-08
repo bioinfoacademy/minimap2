@@ -493,34 +493,32 @@ static void *worker_pipeline(void *shared, int step, void *in)
 					mm_multi_write(p->multipart_fd, &(s->n_reg[i]),  sizeof(s->n_reg[i]), 1);
 					mm_multi_write(p->multipart_fd, &(s->replen[i]), sizeof(int),         1);
 				}
-				for (j = 0; j < s->n_reg[i]; ++j) {
-					mm_reg1_t *r = &s->reg[i][j];
-					if (p->opt->multi_prefix != NULL) {
-						mm_multi_write(p->multipart_fd, r, sizeof(mm_reg1_t), 1);
-						if(p->opt->flag & MM_F_CIGAR){
-							mm_multi_write(p->multipart_fd, &(r->p->capacity), sizeof(uint32_t), 1);
-							mm_multi_write(p->multipart_fd, r->p,              sizeof(mm_extra_t) + sizeof(uint32_t)*r->p->capacity, 1);
+				if (s->n_reg[i] > 0) { // the query has a hit
+					for (j = 0; j < s->n_reg[i]; ++j) {
+						mm_reg1_t *r = &s->reg[i][j];
+						assert(!r->sam_pri || r->id == r->parent); // otherwise, a bug
+						if (p->opt->multi_prefix == NULL) {
+							if ((p->opt->flag & MM_F_NO_PRINT_2ND) && r->id != r->parent) // skip secondary mappings
+								continue;
+							if (p->opt->flag & MM_F_OUT_SAM)
+								mm_write_sam2(&p->str, mi, t, i - seg_st, j, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag);
+							else
+								mm_write_paf(&p->str, mi, t, r, km, p->opt->flag);
+							mm_err_puts(p->str.s);
+						} else { // then save to temprary files, without writing any SAM/PAF records
+							mm_multi_write(p->multipart_fd, r, sizeof(mm_reg1_t), 1);
+							if (p->opt->flag & MM_F_CIGAR) {
+								mm_multi_write(p->multipart_fd, &(r->p->capacity), sizeof(uint32_t), 1);
+								mm_multi_write(p->multipart_fd, r->p, sizeof(mm_extra_t) + sizeof(uint32_t)*r->p->capacity, 1);
+							}
 						}
 					}
-					assert(!r->sam_pri || r->id == r->parent);
-					if ((p->opt->flag & MM_F_NO_PRINT_2ND) && r->id != r->parent)
-						continue;
-					if (p->opt->multi_prefix == NULL) {
-						if (p->opt->flag & MM_F_OUT_SAM)
-							mm_write_sam2(&p->str, mi, t, i - seg_st, j, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag);
-						else
-							mm_write_paf(&p->str, mi, t, r, km, p->opt->flag);
-						mm_err_puts(p->str.s);
-					}
-				}
-				if (s->n_reg[i] == 0 && p->opt->multi_prefix == NULL) { // TODO: in the multi mode, unmapped reads are not written to SAM
-					if (p->opt->flag & MM_F_OUT_SAM) {
+				} else if (p->opt->multi_prefix == NULL && (p->opt->flag & (MM_F_OUT_SAM|MM_F_PAF_NO_HIT))) { // then write an unmapped record
+					if (p->opt->flag & MM_F_OUT_SAM)
 						mm_write_sam2(&p->str, mi, t, i - seg_st, -1, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag);
-						mm_err_puts(p->str.s);
-					} else if (p->opt->flag & MM_F_PAF_NO_HIT) {
-						mm_write_paf(&p->str, mi, t, 0, 0, p->opt->flag);
-						mm_err_puts(p->str.s);
-					}
+					else
+						mm_write_paf(&p->str, mi, t, 0, 0,  p->opt->flag);
+					mm_err_puts(p->str.s);
 				}
 			}
 			for (i = seg_st; i < seg_en; ++i) {
