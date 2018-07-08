@@ -63,7 +63,7 @@ typedef struct {
 	uint32_t *S;               // 4-bit packed sequence
 	struct mm_idx_bucket_s *B; // index (hidden)
 	void *km, *h;
-	int32_t idx_id; //index id 
+	int32_t idx_id;            // index id
 } mm_idx_t;
 
 // minimap2 alignment
@@ -345,6 +345,7 @@ int mm_idx_getseq(const mm_idx_t *mi, uint32_t rid, uint32_t st, uint32_t en, ui
 // deprecated APIs for backward compatibility
 void mm_mapopt_init(mm_mapopt_t *opt);
 mm_idx_t *mm_idx_build(const char *fn, int w, int k, int flag, int n_threads);
+void mm_multi_merge(mm_mapopt_t *opt, mm_idxopt_t *ipt, int num_idx_parts, const char **fn, int argc, char** argv,const char *rg);
 
 #ifdef __cplusplus
 }

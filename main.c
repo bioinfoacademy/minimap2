@@ -4,7 +4,6 @@
 #include "bseq.h"
 #include "minimap.h"
 #include "mmpriv.h"
-#include "merge.h"
 #ifdef HAVE_GETOPT
 #include <getopt.h>
 #else
@@ -61,7 +60,7 @@ static struct option long_options[] = {
 	{ "lj-min-ratio",   required_argument, 0, 0 },   // 30
 	{ "score-N",        required_argument, 0, 0 },   // 31
 	{ "eqx",            no_argument,       0, 0 },   // 32
-	{ "multi-prefix",   required_argument, 0, 0 },	 // 33	
+	{ "multi-prefix",   required_argument, 0, 0 },	 // 33
 	{ "help",           no_argument,       0, 'h' },
 	{ "max-intron-len", required_argument, 0, 'G' },
 	{ "version",        no_argument,       0, 'V' },
@@ -357,7 +356,8 @@ int main(int argc, char *argv[])
 	}
 	mm_idx_reader_close(idx_rdr);
 
-	if(opt.multi_prefix!=NULL) merge(&opt,&ipt,idx_id,(const char**)&argv[optind + 1], argc, argv, rg);
+	if (opt.multi_prefix != NULL)
+		mm_multi_merge(&opt, &ipt, idx_id, (const char**)&argv[optind + 1], argc, argv, rg);
 	if (fflush(stdout) == EOF) {
 		fprintf(stderr, "[ERROR] failed to write the results\n");
 		exit(EXIT_FAILURE);

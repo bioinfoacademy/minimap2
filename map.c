@@ -8,7 +8,6 @@
 #include "mmpriv.h"
 #include "bseq.h"
 #include "khash.h"
-#include "merge.h"
 
 struct mm_tbuf_s {
 	void *km;
@@ -490,22 +489,18 @@ static void *worker_pipeline(void *shared, int step, void *in)
 			int seg_st = s->seg_off[k], seg_en = s->seg_off[k] + s->n_seg[k];
 			for (i = seg_st; i < seg_en; ++i) {
 				mm_bseq1_t *t = &s->seq[i];
-				if(p->opt->multi_prefix!=NULL){
-					multipart_write(p->multipart_fd,&(s->n_reg[i]),sizeof(s->n_reg[i]),1);
-					multipart_write(p->multipart_fd,&(s->replen[i]),sizeof(int),1);
-					//fprintf(stderr,"n regs %d\treplen %d\n",s->n_reg[i],s->replen[i]);
-					//fprintf(stderr,"replen original %d\n",s->replen[i]);
+				if (p->opt->multi_prefix != NULL) {
+					mm_multi_write(p->multipart_fd, &(s->n_reg[i]),  sizeof(s->n_reg[i]), 1);
+					mm_multi_write(p->multipart_fd, &(s->replen[i]), sizeof(int),         1);
 				}
 				for (j = 0; j < s->n_reg[i]; ++j) {
 					mm_reg1_t *r = &s->reg[i][j];
 					if(p->opt->multi_prefix!=NULL) {
-						multipart_write(p->multipart_fd,r,sizeof(mm_reg1_t),1);
+						mm_multi_write(p->multipart_fd, r, sizeof(mm_reg1_t), 1);
 						if(p->opt->flag & MM_F_CIGAR){
-							multipart_write(p->multipart_fd,&(r->p->capacity),sizeof(uint32_t),1);
-							multipart_write(p->multipart_fd,r->p,sizeof(mm_extra_t)+sizeof(uint32_t)*r->p->capacity,1);
- 						}
-						//fprintf(stderr,"REGDETAIL id %d,cnt %d,rid %d,score %d,qs %d, qe %d, rs %d, re %d, parent %d, subsc %d, as %d, mlen %d, blen %d, n_sub %d, score0 %d, hash %u, div %f,",r->id,r->cnt,r->rid,r->score,r->qs,r->qe, r->rs, r->re,r->parent, r->subsc,r->as,r->mlen, r->blen,r->n_sub,r->score0,r->hash,r->div); 
-						//fprintf(stderr,"dp_score %d, dp_max %d, dp_max2 %d \n",r->p->dp_score, r->p->dp_max, r->p->dp_max2);                         
+							mm_multi_write(p->multipart_fd, &(r->p->capacity), sizeof(uint32_t), 1);
+							mm_multi_write(p->multipart_fd, r->p,              sizeof(mm_extra_t) + sizeof(uint32_t)*r->p->capacity, 1);
+						}
 					}
 					assert(!r->sam_pri || r->id == r->parent);
 					if ((p->opt->flag & MM_F_NO_PRINT_2ND) && r->id != r->parent)
@@ -559,7 +554,8 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 			return -1;
 		}
 	}
-	if(opt->multi_prefix!=NULL)  pl.multipart_fd=multipart_init(opt,idx); 
+	if (opt->multi_prefix != NULL)
+		pl.multipart_fd = mm_multi_init(opt, (mm_idx_t*)idx);
 	pl.opt = opt, pl.mi = idx;
 	pl.n_threads = n_threads > 1? n_threads : 1;
 	pl.mini_batch_size = opt->mini_batch_size;
@@ -568,7 +564,8 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 	free(pl.str.s);
 	for (i = 0; i < n_segs; ++i)
 		mm_bseq_close(pl.fp[i]);
-	if(opt->multi_prefix!=NULL) multipart_close(pl.multipart_fd);
+	if (opt->multi_prefix != NULL)
+		mm_multi_close(pl.multipart_fd);
 	free(pl.fp);
 	return 0;
 }

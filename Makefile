@@ -109,11 +109,12 @@ ksw2_extz2_sse.o: ksw2.h kalloc.h
 ksw2_ll_sse.o: ksw2.h kalloc.h
 kthread.o: kthread.h
 main.o: bseq.h minimap.h mmpriv.h getopt.h
+main_nohit.o: minimap.h kseq.h
 map.o: kthread.h kvec.h kalloc.h sdust.h mmpriv.h minimap.h bseq.h khash.h
 map.o: ksort.h
+merge.o: bseq.h kalloc.h minimap.h mmpriv.h
 misc.o: mmpriv.h minimap.h bseq.h ksort.h
 options.o: mmpriv.h minimap.h bseq.h
 pe.o: mmpriv.h minimap.h bseq.h kvec.h kalloc.h ksort.h
 sdust.o: kalloc.h kdq.h kvec.h sdust.h
 sketch.o: kvec.h kalloc.h mmpriv.h minimap.h bseq.h
-merge.o: merge.h
